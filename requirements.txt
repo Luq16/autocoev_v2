@@ -22,6 +22,7 @@ aiohttp>=3.8.0
 # Web Interface
 streamlit>=1.28.0
 plotly>=5.17.0
+matplotlib>=3.7.0
 
 # Configuration & Utilities
 pyyaml>=6.0
