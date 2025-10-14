@@ -20,7 +20,7 @@ import sys
 # Add modern directory to path
 sys.path.append(str(Path(__file__).parent / "modern"))
 
-from modern.core.fast_embedding_generator import FastEmbeddingGenerator
+from modern.core.fast_embedding_generator import FastProteinEmbedder
 from modern.integrations.string_db import StringDBClient
 from modern.report.report_generator import ReportGenerator
 
@@ -122,7 +122,9 @@ def run_analysis(proteins: dict, threshold: float, species: int,
     # Step 1: Initialize ESM-2
     status_text.text("Loading ESM-2 model...")
     progress_bar.progress(10)
-    embedding_gen = FastEmbeddingGenerator(config['methods']['protein_lm'])
+    device = config['methods']['protein_lm'].get('device', 'auto')
+    cache_dir = config.get('data', {}).get('esm_cache', './cache/esm_embeddings')
+    embedding_gen = FastProteinEmbedder(cache_dir=cache_dir, device=device)
 
     # Step 2: Generate protein pairs
     status_text.text("Generating protein pairs...")
