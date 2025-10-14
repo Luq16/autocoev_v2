@@ -21,7 +21,7 @@ import sys
 sys.path.append(str(Path(__file__).parent / "modern"))
 
 from modern.core.fast_embedding_generator import FastProteinEmbedder
-from modern.integrations.string_db import StringDBClient
+from modern.integrations.string_db import STRINGDatabase
 from modern.report.report_generator import ReportGenerator
 
 # Page configuration
@@ -158,6 +158,7 @@ def run_analysis(proteins: dict, threshold: float, species: int,
                 'protein_a': protein_a,
                 'protein_b': protein_b,
                 'autocoev_score': score,
+                'score': score,  # Required by STRING enrichment
                 'sequence_a': seq_a,
                 'sequence_b': seq_b
             })
@@ -169,12 +170,9 @@ def run_analysis(proteins: dict, threshold: float, species: int,
         status_text.text("Validating with STRING database...")
         progress_bar.progress(70)
 
-        string_config = config['methods']['string_db'].copy()
-        string_config['species'] = species
-        string_config['required_score'] = string_threshold
-        string_client = StringDBClient(string_config)
+        string_db = STRINGDatabase(species=species, required_score=string_threshold)
 
-        predictions = string_client.enrich_with_string(predictions)
+        predictions = string_db.enrich_with_string(predictions)
         progress_bar.progress(90)
     else:
         # Add default STRING fields
