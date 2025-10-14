@@ -1,0 +1,84 @@
+# CLAUDE.md - Keep local only, don't push to repo
+CLAUDE.md
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual Environment
+venv/
+env/
+ENV/
+.venv
+
+# Cache directories
+cache/
+.cache/
+esm_cache/
+alphafold_cache/
+autocoev_cache/
+*.pkl
+*.pt
+*.pth
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Logs
+*.log
+logs/
+
+# Results and outputs
+results/
+output/
+*.csv
+*.tsv
+
+# Keep documentation
+!README.md
+!AutoCoEv_Modernization_Plan.md
+!Speed_Optimization_Strategy.md
+
+# API Keys and secrets
+.env
+*.key
+config/secrets.yaml
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb
+
+# Data files (large)
+*.fasta
+*.pdb
+*.gz
+*.zip
+*.tar
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/

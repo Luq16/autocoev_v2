@@ -1,0 +1,73 @@
+# AutoCoEv v2 Modern Pipeline Configuration
+
+# Pipeline version
+version: "2.0"
+
+# Data directories
+data:
+  cache_root: "./cache"
+  esm_cache: "./cache/esm_embeddings"
+  alphafold_cache: "./cache/alphafold_structures"
+  output_dir: "./results"
+
+# Analysis methods configuration
+methods:
+  # ESM-2 Protein Language Model
+  protein_lm:
+    enabled: true
+    model: "esm2_t33_650M_UR50D"  # Optimal size/speed tradeoff
+    device: "auto"  # auto, cuda, or cpu
+    batch_size: 8
+
+  # STRING Database Integration
+  string_db:
+    enabled: true
+    species: 9606  # Human (NCBI taxonomy ID)
+    required_score: 400  # Minimum interaction score (0-1000)
+    network_type: "physical"  # physical or functional
+
+  # LLM Literature Search
+  llm_validation:
+    enabled: true
+    provider: "openai"  # openai or anthropic
+    model: "gpt-4"  # gpt-4, gpt-4-turbo, or claude-3-opus
+    temperature: 0.3
+    max_tokens: 1500
+    parallel_requests: 5
+
+# Scoring configuration
+scoring:
+  # Two-tier screening thresholds
+  fast_screening_threshold: 0.5  # ESM-2 attention threshold
+  detailed_threshold: 0.7        # Final confidence threshold
+
+  # Weighted ensemble scoring (when multiple methods enabled)
+  weights:
+    esm2_attention: 0.50
+    string_confidence: 0.35
+    literature_support: 0.15
+
+  # Confidence levels for reporting
+  confidence_levels:
+    high: 0.8
+    medium: 0.6
+    low: 0.4
+
+# Parallel processing
+parallelization:
+  n_workers: -1  # -1 uses all available CPU cores
+  use_multiprocessing: true
+  chunk_size: 100  # Number of pairs per worker
+
+# Caching strategy
+cache:
+  enabled: true
+  ttl_days: 30  # Time-to-live for cache entries
+  max_size_gb: 50  # Maximum cache size
+
+# Output options
+output:
+  format: "markdown"  # markdown, json, csv
+  include_plots: false
+  save_intermediate: false
+  verbose: true
