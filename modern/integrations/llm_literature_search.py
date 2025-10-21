@@ -1,6 +1,6 @@
 """
 LLM-Powered Literature Search and Biological Interpretation
-Uses GPT-4 or Claude to validate predictions and generate biological insights
+Uses LLMs to validate predictions and generate biological insights
 """
 
 import openai
@@ -33,7 +33,7 @@ class LLMLiteratureSearch:
 
         Args:
             provider: 'openai' or 'anthropic'
-            model: Model name (gpt-4, gpt-4-turbo, claude-3-opus, etc.)
+            model: Model name (e.g., gpt-4, gpt-4-turbo)
             temperature: Sampling temperature (0.0-1.0)
             max_tokens: Maximum tokens in response
         """

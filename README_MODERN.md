@@ -25,7 +25,7 @@ AutoCoEv v2 is a modernized implementation of the AutoCoEv pipeline that achieve
 - Enriches results with experimental evidence and confidence scores
 
 ### 3. LLM-Powered Literature Search
-- GPT-4 or Claude-powered literature validation
+- LLM-powered literature validation and biological interpretation
 - Biological context generation
 - Experimental validation suggestions
 - Novelty assessment
@@ -58,7 +58,7 @@ Set environment variables for LLM access:
 # For OpenAI (GPT-4)
 export OPENAI_API_KEY="your-api-key"
 
-# OR for Anthropic (Claude)
+# OR for Anthropic
 export ANTHROPIC_API_KEY="your-api-key"
 ```
 
