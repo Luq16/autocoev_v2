@@ -16,6 +16,8 @@ import yaml
 from datetime import datetime
 from io import StringIO, BytesIO
 import sys
+import networkx as nx
+import math
 
 # Add modern directory to path
 sys.path.append(str(Path(__file__).parent / "modern"))
@@ -278,6 +280,304 @@ def create_visualizations(df: pd.DataFrame):
     )
 
 
+def build_network_graph(df: pd.DataFrame, min_confidence: float = 0.0) -> nx.Graph:
+    """Build NetworkX graph from predictions dataframe."""
+    G = nx.Graph()
+
+    # Filter by confidence
+    df_filtered = df[df['combined_confidence'] >= min_confidence]
+
+    # Add edges with attributes
+    for _, row in df_filtered.iterrows():
+        G.add_edge(
+            row['protein_a'],
+            row['protein_b'],
+            weight=row['combined_confidence'],
+            autocoev_score=row['autocoev_score'],
+            string_score=row.get('string_score', 0),
+            is_novel=row.get('is_novel', True)
+        )
+
+    return G
+
+
+def calculate_network_stats(G: nx.Graph) -> dict:
+    """Calculate network statistics."""
+    stats = {}
+
+    if len(G) == 0:
+        return {
+            'nodes': 0,
+            'edges': 0,
+            'density': 0,
+            'components': 0,
+            'clustering': 0,
+            'hub_proteins': []
+        }
+
+    stats['nodes'] = G.number_of_nodes()
+    stats['edges'] = G.number_of_edges()
+    stats['density'] = nx.density(G)
+    stats['components'] = nx.number_connected_components(G)
+
+    # Clustering coefficient
+    try:
+        stats['clustering'] = nx.average_clustering(G)
+    except:
+        stats['clustering'] = 0
+
+    # Hub proteins (top 5 by degree)
+    degree_dict = dict(G.degree())
+    sorted_nodes = sorted(degree_dict.items(), key=lambda x: x[1], reverse=True)
+    stats['hub_proteins'] = sorted_nodes[:5]
+
+    return stats
+
+
+def create_network_visualization(df: pd.DataFrame):
+    """Create comprehensive interactive network visualization dashboard."""
+
+    st.subheader("Interactive Network Visualization Dashboard")
+
+    # Controls in sidebar-style columns
+    col1, col2, col3, col4 = st.columns(4)
+
+    with col1:
+        confidence_filter = st.slider(
+            "Min Confidence",
+            min_value=0.0,
+            max_value=1.0,
+            value=0.5,
+            step=0.05,
+            key="network_confidence"
+        )
+
+    with col2:
+        layout_algorithm = st.selectbox(
+            "Layout",
+            options=["Spring", "Circular", "Kamada-Kawai", "Shell"],
+            index=0
+        )
+
+    with col3:
+        show_labels = st.checkbox("Show Labels", value=True)
+
+    with col4:
+        filter_type = st.selectbox(
+            "Filter",
+            options=["All", "Novel Only", "Known Only"],
+            index=0
+        )
+
+    # Apply filters
+    df_filtered = df[df['combined_confidence'] >= confidence_filter].copy()
+
+    if filter_type == "Novel Only":
+        df_filtered = df_filtered[df_filtered['is_novel'] == True]
+    elif filter_type == "Known Only":
+        df_filtered = df_filtered[df_filtered['is_novel'] == False]
+
+    if len(df_filtered) == 0:
+        st.warning("No interactions match the selected filters. Try lowering the confidence threshold.")
+        return
+
+    # Build network
+    G = build_network_graph(df_filtered)
+
+    if len(G) == 0:
+        st.warning("No network to display. Adjust your filters.")
+        return
+
+    # Calculate statistics
+    stats = calculate_network_stats(G)
+
+    # Display network statistics
+    st.markdown("#### Network Statistics")
+    stat_col1, stat_col2, stat_col3, stat_col4, stat_col5 = st.columns(5)
+
+    with stat_col1:
+        st.metric("Nodes", stats['nodes'])
+    with stat_col2:
+        st.metric("Edges", stats['edges'])
+    with stat_col3:
+        st.metric("Density", f"{stats['density']:.3f}")
+    with stat_col4:
+        st.metric("Components", stats['components'])
+    with stat_col5:
+        st.metric("Avg Clustering", f"{stats['clustering']:.3f}")
+
+    # Hub proteins
+    if stats['hub_proteins']:
+        with st.expander("Top Hub Proteins (Most Connected)"):
+            hub_df = pd.DataFrame(stats['hub_proteins'], columns=['Protein', 'Connections'])
+            st.dataframe(hub_df, use_container_width=True, hide_index=True)
+
+    # Calculate layout
+    if layout_algorithm == "Spring":
+        pos = nx.spring_layout(G, k=1/math.sqrt(len(G)), iterations=50)
+    elif layout_algorithm == "Circular":
+        pos = nx.circular_layout(G)
+    elif layout_algorithm == "Kamada-Kawai":
+        pos = nx.kamada_kawai_layout(G)
+    else:  # Shell
+        pos = nx.shell_layout(G)
+
+    # Prepare node data
+    node_x = []
+    node_y = []
+    node_text = []
+    node_size = []
+    node_color = []
+
+    degree_dict = dict(G.degree())
+    max_degree = max(degree_dict.values()) if degree_dict else 1
+
+    for node in G.nodes():
+        x, y = pos[node]
+        node_x.append(x)
+        node_y.append(y)
+
+        degree = degree_dict[node]
+        node_text.append(f"{node}<br>Connections: {degree}")
+
+        # Size by degree
+        node_size.append(10 + (degree / max_degree) * 30)
+
+        # Color by degree (hub proteins are darker)
+        node_color.append(degree)
+
+    # Prepare edge data
+    edge_x = []
+    edge_y = []
+    edge_colors = []
+    edge_widths = []
+
+    for edge in G.edges(data=True):
+        x0, y0 = pos[edge[0]]
+        x1, y1 = pos[edge[1]]
+        edge_x.extend([x0, x1, None])
+        edge_y.extend([y0, y1, None])
+
+        # Color by novelty
+        if edge[2].get('is_novel', False):
+            edge_colors.extend(['rgba(255, 99, 71, 0.6)', 'rgba(255, 99, 71, 0.6)', None])  # Red for novel
+        else:
+            edge_colors.extend(['rgba(100, 149, 237, 0.6)', 'rgba(100, 149, 237, 0.6)', None])  # Blue for known
+
+        # Width by confidence
+        width = 1 + edge[2]['weight'] * 3
+        edge_widths.extend([width, width, None])
+
+    # Create figure
+    fig = go.Figure()
+
+    # Add edges
+    fig.add_trace(go.Scatter(
+        x=edge_x, y=edge_y,
+        mode='lines',
+        line=dict(width=1, color='rgba(125, 125, 125, 0.3)'),
+        hoverinfo='none',
+        showlegend=False
+    ))
+
+    # Add nodes
+    fig.add_trace(go.Scatter(
+        x=node_x, y=node_y,
+        mode='markers+text' if show_labels else 'markers',
+        marker=dict(
+            size=node_size,
+            color=node_color,
+            colorscale='Viridis',
+            showscale=True,
+            colorbar=dict(
+                title="Degree<br>Centrality",
+                thickness=15,
+                len=0.7
+            ),
+            line=dict(width=2, color='white')
+        ),
+        text=[node.split()[0] for node in G.nodes()] if show_labels else None,
+        textposition="top center",
+        textfont=dict(size=8),
+        hovertext=node_text,
+        hoverinfo='text',
+        showlegend=False
+    ))
+
+    # Update layout
+    fig.update_layout(
+        title=dict(
+            text=f"Protein Interaction Network ({len(G)} proteins, {G.number_of_edges()} interactions)",
+            x=0.5,
+            xanchor='center'
+        ),
+        showlegend=False,
+        hovermode='closest',
+        margin=dict(b=20, l=5, r=5, t=40),
+        xaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
+        yaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
+        height=600,
+        plot_bgcolor='white'
+    )
+
+    st.plotly_chart(fig, use_container_width=True)
+
+    # Legend
+    st.markdown("""
+    **Legend:**
+    - **Node size**: Proportional to number of connections (degree centrality)
+    - **Node color**: Degree centrality (darker = more connections)
+    - **Edge color**: Red = Novel interactions, Blue = STRING-validated
+    - **Hover**: Shows protein name and connection count
+    """)
+
+    # Export options
+    st.markdown("#### Export Network")
+
+    export_col1, export_col2 = st.columns(2)
+
+    with export_col1:
+        # Export as GraphML (for Cytoscape)
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.graphml', delete=False) as tmp:
+            nx.write_graphml(G, tmp.name)
+            tmp_path = tmp.name
+
+        with open(tmp_path, 'r') as f:
+            graphml_data = f.read()
+
+        # Clean up temp file
+        Path(tmp_path).unlink()
+
+        st.download_button(
+            label="Download GraphML (for Cytoscape)",
+            data=graphml_data,
+            file_name=f"ppi_network_{datetime.now().strftime('%Y%m%d_%H%M%S')}.graphml",
+            mime="application/xml",
+            use_container_width=True
+        )
+
+    with export_col2:
+        # Export network metrics
+        metrics_data = []
+        for node in G.nodes():
+            metrics_data.append({
+                'protein': node,
+                'degree': G.degree(node),
+                'clustering_coefficient': nx.clustering(G, node)
+            })
+
+        metrics_df = pd.DataFrame(metrics_data)
+        metrics_csv = metrics_df.to_csv(index=False)
+
+        st.download_button(
+            label="Download Network Metrics (CSV)",
+            data=metrics_csv,
+            file_name=f"network_metrics_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
+            mime="text/csv",
+            use_container_width=True
+        )
+
+
 def main():
     """Main Streamlit application."""
 
@@ -475,6 +775,10 @@ def main():
             # Visualizations
             st.markdown("---")
             create_visualizations(df)
+
+            # Network Visualization Dashboard
+            st.markdown("---")
+            create_network_visualization(df)
 
             # Detailed results table
             st.markdown("---")

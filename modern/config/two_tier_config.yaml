@@ -1,0 +1,188 @@
+# Two-Tier Workflow Configuration
+# Combines ESM-2 fast screening with CAPS2 rigorous validation
+
+# ========== TIER 1: ESM-2 FAST SCREENING ==========
+tier1_esm2:
+  enabled: true
+
+  # ESM-2 model settings
+  model: "esm2_t33_650M_UR50D"  # 650M parameter model (optimal speed/accuracy)
+  device: "auto"  # auto, cuda, or cpu
+
+  # Screening thresholds
+  threshold: 0.5  # Minimum coevolution score to report
+  min_sequence_length: 10  # Minimum protein length
+  max_sequence_length: 5000  # Maximum protein length (memory constraint)
+
+  # Caching
+  cache_embeddings: true
+  cache_dir: "./cache/esm_embeddings"
+
+# ========== TIER 2: CAPS2 RIGOROUS VALIDATION ==========
+tier2_caps2:
+  enabled: true
+
+  # Candidate selection
+  top_n_candidates: 20  # Number of top predictions to validate with CAPS2
+  min_confidence: 0.6  # Minimum confidence for CAPS2 validation
+  prioritize_novel: true  # Give priority to novel discoveries
+
+  # Novel/known ratio (if prioritize_novel is true)
+  novel_ratio: 0.7  # 70% novel, 30% known
+
+  # CAPS2 execution settings
+  working_dir: "/var/tmp/autocoev_twotier"  # CAPS2 working directory
+  database_dir: "/var/tmp/DB10v1"  # OrthoDB database directory
+
+  # Reference organism (default: Mouse)
+  organism: "10090"  # NCBI Taxonomy ID (10090=Mouse, 9606=Human)
+  level: "40674"  # Taxonomic level (40674=Mammalia, 7742=Vertebrata)
+
+  # Species list for ortholog search
+  species_list: "placental.tsv"  # Located in root directory
+  external_tree: "placental.nwk"  # Guide tree (optional)
+
+  # CAPS2 parameters
+  alpha: 0.01  # Alpha value for threshold cutoff
+  bootstrap: 0.6  # Bootstrap threshold
+  min_common_species: 20  # Minimum common species per pair
+
+  # MSA settings
+  msa_method: "prank"  # MSA method (prank, muscle, mafft)
+  guidance_method: "muscle"  # Method for GUIDANCE assessment
+  guidance_cutoff: 0.95  # Sequence cutoff for divergent sequences
+
+  # Tree settings
+  tree_method: "auto"  # Tree generation (auto, phyml, external)
+  rooted_trees: true  # Root trees with TreeBeST
+
+  # BLAST settings
+  blast_identity: 35.0  # Minimum identity (%)
+  blast_gaps: 25  # Maximum gaps (%)
+
+  # Performance
+  threads: "auto"  # Number of CPU threads (auto = all cores)
+  parallel_caps: true  # Run CAPS2 pairs in parallel
+
+# ========== STRING DATABASE INTEGRATION ==========
+string_db:
+  enabled: true
+
+  # STRING API settings
+  species: 9606  # Human (9606), Mouse (10090)
+  required_score: 400  # Minimum confidence (150=low, 400=medium, 700=high, 900=highest)
+  network_type: "physical"  # physical or functional
+
+  # Rate limiting
+  request_delay: 0.1  # Seconds between API requests
+  max_retries: 3  # Maximum retry attempts
+
+  # Evidence channels
+  use_experimental: true
+  use_database: true
+  use_text_mining: true
+  use_coexpression: false
+
+# ========== LLM LITERATURE VALIDATION ==========
+llm_validation:
+  enabled: false  # Disabled by default for two-tier (optional)
+
+  # LLM provider
+  provider: "openai"  # openai or anthropic
+  model: "gpt-4"  # gpt-4, gpt-3.5-turbo, claude-3
+
+  # Validation settings
+  validate_top_n: 10  # Number of top predictions to validate with LLM
+  temperature: 0.3  # Lower = more deterministic
+  max_tokens: 1500
+
+  # Parallel processing
+  parallel_requests: 5  # Concurrent API requests
+
+# ========== SCORE FUSION ==========
+scoring:
+  # Final confidence calculation
+  fusion_method: "weighted_average"  # weighted_average, max, or bayesian
+
+  # Weights for three-way fusion (ESM-2 + CAPS2 + STRING)
+  weights_with_caps2:
+    esm2: 0.35
+    caps2: 0.40
+    string: 0.25
+
+  # Weights for two-way fusion (ESM-2 + STRING only)
+  weights_without_caps2:
+    esm2: 0.60
+    string: 0.40
+
+  # Confidence intervals
+  high_confidence_threshold: 0.8  # High confidence interactions
+  medium_confidence_threshold: 0.6  # Medium confidence interactions
+
+  # Agreement/disagreement detection
+  flag_disagreements: true  # Flag when ESM-2 and CAPS2 disagree
+  disagreement_threshold: 0.3  # Score difference to flag as disagreement
+
+# ========== OUTPUT SETTINGS ==========
+output:
+  # Output directory
+  base_dir: "./results/two_tier"
+
+  # Output formats
+  generate_markdown: true
+  generate_csv: true
+  generate_json: false
+
+  # Report sections
+  include_summary: true
+  include_tier1_only: true  # Include ESM-2-only predictions
+  include_tier2_validated: true  # Include CAPS2-validated predictions
+  include_residue_maps: true  # Include residue-level coevolution maps
+  include_methodology: true  # Include detailed methodology section
+
+  # Visualization
+  generate_network_plots: false  # Requires matplotlib/networkx
+  generate_heatmaps: false  # Requires seaborn
+
+  # Export options
+  export_caps2_inputs: true  # Export CAPS2 input files (for debugging)
+  export_caps2_raw_results: true  # Export raw CAPS2 outputs
+  export_residue_level_csv: true  # Export residue-level data
+
+# ========== DATA PATHS ==========
+data:
+  # Input/output paths
+  esm_cache: "./cache/esm_embeddings"
+  caps2_cache: "./cache/caps2_results"
+  output_dir: "./results/two_tier"
+
+  # Database paths (OrthoDB)
+  orthodb_version: "v101"
+  gene_xrefs: "odb10v1_gene_xrefs.tab"
+  og2genes: "odb10v1_OG2genes.tab"
+  all_fasta: "odb10v1_all_fasta.tab"
+
+# ========== LOGGING ==========
+logging:
+  level: "INFO"  # DEBUG, INFO, WARNING, ERROR
+  log_to_file: true
+  log_file: "two_tier_workflow.log"
+  include_timestamps: true
+
+# ========== ADVANCED OPTIONS ==========
+advanced:
+  # Memory optimization
+  batch_size: 100  # Process proteins in batches
+  clear_cache_on_completion: false
+
+  # Error handling
+  continue_on_error: true  # Continue even if some pairs fail
+  max_retries: 3
+
+  # Validation
+  skip_existing: true  # Skip pairs already analyzed
+  validate_inputs: true  # Validate FASTA format
+
+  # Performance monitoring
+  profile_performance: false  # Enable performance profiling
+  report_progress: true  # Real-time progress updates
