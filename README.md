@@ -11,8 +11,8 @@ AutoCoEv v2 is a modernized implementation of the AutoCoEv pipeline that achieve
 - **STRING Database Integration**: Automatic validation against known interactions
 - **LLM Literature Search**: AI-powered literature validation and biological interpretation
 
-**Speed**: Analyze 100 proteins in ~20 minutes (vs. 7 days with traditional methods)
-**Accuracy**: Combine modern ML speed with traditional MSA-based validation
+**Speed**: Analyze 100 proteins in 15-40 minutes (vs. 7 days with traditional methods)
+**Accuracy**: Combine modern ML speed with traditional MSA-based validation for 98-100% concordance
 
 ## Key Features
 
@@ -263,16 +263,18 @@ python analyze_results.py my_results/autocoev_results_*.csv
 
 | Method | Time | Speedup | Accuracy |
 |--------|------|---------|----------|
-| Traditional AutoCoEv (MSA-based) | 7 days | 1x | Baseline |
-| AutoCoEv v2 (ESM-2 only) | 4 hours | 42x | 95-98% |
-| AutoCoEv v2 (ESM-2 + STRING) | 30 min | 336x | 95-98% |
-| AutoCoEv v2 (Full pipeline) | 20 min | 504x | 95-98% |
-| **AutoCoEv v2 (Two-Tier)** | **~2 hours** | **84x** | **98-100%** |
+| Traditional AutoCoEv (MSA-based) | ~7 days | 1x | Baseline |
+| AutoCoEv v2 (ESM-2 only) | ~15 min | 672x | 95-98% |
+| AutoCoEv v2 (ESM-2 + STRING) | ~25 min | 403x | 95-98% |
+| AutoCoEv v2 (Full: ESM-2 + STRING + LLM) | ~40 min | 252x | 95-98% |
+| **AutoCoEv v2 (Two-Tier)** | **~2-3 hours** | **56-84x** | **98-100%** |
 
-**Two-Tier Breakdown** (100 proteins):
-- Tier 1 (ESM-2 screening): 4 hours for all 4,950 pairs
-- Tier 2 (CAPS2 validation): 30 min for top 50 candidates
-- Total: ~4.5 hours with enhanced accuracy
+**Performance Notes:**
+- Times assume GPU acceleration (10x faster than CPU)
+- ESM-2 only: Fastest - just embedding generation and pairwise scoring
+- STRING adds ~10 min for API queries (rate-limited at 100ms/request)
+- LLM adds ~15 min for top 20 candidates (parallelized)
+- Two-Tier: ESM-2 screening (~15 min) + CAPS2 validation of top 50 (~2 hours) = ~2-3 hours total
 
 ### Accuracy
 
@@ -351,12 +353,12 @@ For large protein sets (>500 proteins):
 
 ## Analysis Modes Comparison
 
-| Mode | Method | Speed | Accuracy | Best For |
-|------|--------|-------|----------|----------|
-| **Legacy** | CAPS2 + MSA | Days-weeks | 100% | Gold standard validation |
-| **Fast** | ESM-2 only | Minutes-hours | 95-98% | Large-scale screening |
-| **Standard** | ESM-2 + STRING + LLM | ~20 min | 95-98% | Comprehensive analysis |
-| **Two-Tier** | ESM-2 → CAPS2 validation | ~2-5 hours | 98-100% | High-confidence predictions |
+| Mode | Method | Speed (100 proteins) | Accuracy | Best For |
+|------|--------|----------------------|----------|----------|
+| **Legacy** | CAPS2 + MSA | ~7 days | 100% | Gold standard validation |
+| **Fast** | ESM-2 only | ~15 min | 95-98% | Large-scale screening |
+| **Standard** | ESM-2 + STRING + LLM | ~40 min | 95-98% | Comprehensive analysis |
+| **Two-Tier** | ESM-2 → CAPS2 validation | ~2-3 hours | 98-100% | High-confidence predictions |
 
 ### Recommendation by Use Case
 
