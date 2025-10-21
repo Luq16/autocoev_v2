@@ -259,7 +259,7 @@ python analyze_results.py my_results/autocoev_results_*.csv
 
 ## Performance Benchmarks
 
-### Speed Comparison (100 proteins, 4,950 pairs)
+### Speed Comparison (100 proteins, 4,950 pairs) (time mentiioned are juste estimate, need to be checked before publishing)
 
 | Method | Time | Speedup | Accuracy |
 |--------|------|---------|----------|
@@ -281,22 +281,6 @@ python analyze_results.py my_results/autocoev_results_*.csv
 - **ESM-2 vs. MSA**: 95-98% concordance
 - **STRING validation**: Independent experimental evidence
 - **LLM literature search**: 88%+ precision in PPI extraction
-
-### Test Results (5 proteins: EGFR, GRB2, TP53, MDM2, SHC1)
-
-**Runtime**: 6 seconds (ESM-2 + STRING validation)
-
-**Known Interactions Detected**:
-- TP53-MDM2: STRING score 0.999 (experimental evidence: 0.999)
-- GRB2-SHC1: STRING score 0.999 (experimental evidence: 0.999)
-- EGFR-GRB2: STRING score 0.999 (experimental evidence: 0.996)
-- EGFR-SHC1: STRING score 0.999 (experimental evidence: 0.995)
-
-**Novel Predictions**:
-- GRB2-MDM2: AutoCoEv score 0.622 (not in STRING)
-- MDM2-SHC1: AutoCoEv score 0.615 (not in STRING)
-
-**Status**: All components tested and verified working correctly
 
 ## Architecture
 
@@ -322,44 +306,6 @@ autocoev_v2/
 ├── requirements.txt            # Python dependencies
 └── README.md                   # This file
 ```
-
-## Troubleshooting
-
-### GPU Not Detected
-
-```bash
-# Check CUDA availability
-python -c "import torch; print(torch.cuda.is_available())"
-
-# Force CPU if needed
-python autocoev_modern.py --input proteins.fasta --config config_cpu.yaml
-```
-
-### API Rate Limits
-
-If you hit LLM API rate limits:
-
-1. Reduce `--llm-top` value (default: 20)
-2. Add delays in `llm_literature_search.py`
-3. Use `--no-llm` for initial screening
-
-### Memory Issues
-
-For large protein sets (>500 proteins):
-
-1. Increase threshold (`--threshold 0.7`)
-2. Process in batches
-3. Disable LLM validation initially
-
-## Analysis Modes Comparison
-
-| Mode | Method | Speed (100 proteins) | Accuracy | Best For |
-|------|--------|----------------------|----------|----------|
-| **Legacy** | CAPS2 + MSA | ~7 days | 100% | Gold standard validation |
-| **Fast** | ESM-2 only | ~15 min | 95-98% | Large-scale screening |
-| **Standard** | ESM-2 + STRING + LLM | ~40 min | 95-98% | Comprehensive analysis |
-| **Two-Tier** | ESM-2 → CAPS2 validation | ~2-3 hours | 98-100% | High-confidence predictions |
-
 ### Recommendation by Use Case
 
 - **Exploratory screening**: Fast mode (ESM-2 only)
@@ -367,18 +313,17 @@ For large protein sets (>500 proteins):
 - **Literature-ready analysis**: Standard mode (ESM-2 + STRING + LLM)
 - **Gold-standard validation**: Legacy mode (full CAPS2)
 
-**Note**: All pipelines can coexist. Modern implementation complements rather than replaces legacy AutoCoEv.
 
 ## Citation
 
-If you use AutoCoEv v2, please cite:
+If you use AutoCoEv v2, please cite: 
 
 ```bibtex
 @software{autocoev_v2_2025,
-  title={AutoCoEv v2: Modern Implementation with ESM-2 and LLM Integration},
-  author={AutoCoEv Modernization Project},
+  title={AutoCoEv v2: Rapid Protein-Protein Interaction Prediction Through ESM-2 Language Models with Phylogenetic Validation},
+  author={},
   year={2025},
-  url={https://github.com/[your-repo]/autocoev_v2}
+  url={https://github.com/Luq16/autocoev_v2}
 }
 ```
 
@@ -391,19 +336,18 @@ Also cite the underlying methods:
 ## Support
 
 - **Issues**: [GitHub Issues](https://github.com/[your-repo]/autocoev_v2/issues)
-- **Documentation**: See `AutoCoEv_Modernization_Plan.md`
-- **Performance**: See `Speed_Optimization_Strategy.md`
+
 
 ## License
 
-[Specify license - typically same as original AutoCoEv]
+MIT
 
 ## Acknowledgments
 
 - Original AutoCoEv developers (mattilalab)
 - ESM-2 team at Meta AI
 - STRING database consortium
-- OpenAI/Anthropic for LLM APIs
+- OpenAI for LLM APIs
 
 ---
 
