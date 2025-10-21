@@ -57,8 +57,17 @@ output/
 *.csv
 *.tsv
 
+# Documentation files (internal/temporary)
+CAPS2_vs_ESM2.md
+TWO_TIER_STATUS.md
+PIPELINE_ARCHITECTURE.md
+ESM2_vs_CAPS2_Comparison.md
+TWO_TIER_WORKFLOW_GUIDE.md
+CHECKPOINT.md
+
 # Keep documentation
 !README.md
+!README_MODERN.md
 !AutoCoEv_Modernization_Plan.md
 !Speed_Optimization_Strategy.md
 
