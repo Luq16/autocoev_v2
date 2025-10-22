@@ -259,7 +259,7 @@ python analyze_results.py my_results/autocoev_results_*.csv
 
 ## Performance Benchmarks
 
-### Speed Comparison (100 proteins, 4,950 pairs) (time mentiioned are juste estimate, need to be checked before publishing)
+### Speed Comparison (100 proteins, 4,950 pairs) (time mentioned are just estimates, need to be checked before publishing)
 
 | Method | Time | Speedup | Accuracy |
 |--------|------|---------|----------|
