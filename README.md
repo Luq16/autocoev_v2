@@ -7,11 +7,11 @@
 AutoCoEv v2 is a modernized implementation of the AutoCoEv pipeline that achieves **50-100x speedup** while maintaining high accuracy through:
 
 - **ESM-2 Protein Language Model**: Fast coevolution scoring without MSA generation
-- **Two-Tier Screening**: Fast ESM-2 screening + rigorous CAPS2 validation for top candidates
+- **Two-Tier Screening**: Fast ESM-2 screening + rigorous lagacy AutoCoEV(CAPS2) validation for top candidates
 - **STRING Database Integration**: Automatic validation against known interactions
 - **LLM Literature Search**: AI-powered literature validation and biological interpretation
 
-**Speed**: Analyze 100 proteins in 15-40 minutes (vs. 7 days with traditional methods)
+**Speed**: Analyze 100 proteins in 15-40 minutes (vs. days with traditional methods)
 **Accuracy**: Combine modern ML speed with traditional MSA-based validation for 98-100% concordance
 
 ## Key Features
@@ -93,7 +93,7 @@ See `STREAMLIT_GUIDE.md` for detailed documentation.
 **Combine fast ESM-2 screening with rigorous CAPS2 validation:**
 
 ```bash
-./run_two_tier.sh proteins.fasta
+./run_two_tier.sh --input proteins.fasta
 ```
 
 This workflow:
@@ -230,10 +230,10 @@ MASMTGGQQMGRDLYDDDDKDPMM...
 EOF
 
 # 2. Run two-tier analysis
-./run_two_tier.sh my_proteins.fasta
+./run_two_tier.sh --input my_proteins.fasta
 
 # 3. Review results
-cat results/two_tier_combined_report.md
+cat results/two_tier/autocoev_analysis_*.md
 ```
 
 **What happens:**
